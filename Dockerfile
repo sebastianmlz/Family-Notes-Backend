@@ -22,5 +22,5 @@ COPY --chown=appuser:appuser . /app/
 USER appuser
 EXPOSE 8000
 
-# 8. Comando de inicio: Lo que arranca el servidor
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# 8. Comando de inicio: usa el puerto que Render provee en $PORT
+CMD ["sh", "-c", "gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3"]
