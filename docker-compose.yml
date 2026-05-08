@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  web:
+    build: .  # Indica que debe usar el Dockerfile de esta carpeta
+    container_name: family_notes_backend
+    # You can override START_CMD in your .env to use gunicorn in prod
+    command: ${START_CMD:-python manage.py runserver 0.0.0.0:8000}
+    volumes:
+      - .:/app  # "Hot Reload": Cambias algo en VS Code y se refleja en el contenedor al instante
+    ports:
+      - "8000:8000"  # Mapea [Puerto de tu Laptop]:[Puerto del Contenedor]
+    env_file:
+      - .env  # Carga automáticamente tus credenciales de NeonDB y SECRET_KEY
+    # Prefer loading DEBUG and other vars from the .env file (see .env.example)

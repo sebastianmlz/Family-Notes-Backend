@@ -1,0 +1,18 @@
+# Entorno virtual
+.venv/
+
+# Archivos de usuario (Media)
+media/
+
+# Archivos estáticos recolectados
+staticfiles/
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+
+# Base de datos local (ya que usas NeonDB)
+db.sqlite3
+
+# Configuración de entorno
+.env
