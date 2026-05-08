@@ -26,6 +26,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from django.http import JsonResponse
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -44,4 +45,6 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
+    # Simple health endpoint for platform health checks
+    path("healthz", lambda request: JsonResponse({"status": "ok"})),
 ]
