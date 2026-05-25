@@ -23,7 +23,7 @@ class TestNotePrivacy:
         self.client.force_authenticate(user=self.user)
 
     def test_list_notes_only_for_correct_profile(self):
-        # Creamos una nota para el perfil[cite: 1]
+        # Creamos una nota para el perfil
         Note.objects.create(
             title="Nota Privada", content="Contenido", profile=self.profile
         )
@@ -33,16 +33,22 @@ class TestNotePrivacy:
         response = self.client.get(f"{url}?profile_id={self.profile.id}")
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]["title"] == "Nota Privada"
+        assert response.data["count"] == 1
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["title"] == "Nota Privada"
 
-    def test_empty_list_if_no_profile_id(self):
+    def test_list_all_family_notes_if_no_profile_id(self):
+        Note.objects.create(
+            title="Nota Familiar", content="Contenido", profile=self.profile
+        )
         url = reverse("note-list")
-        # Según tu lógica, si no hay profile_id, devuelve vacío[cite: 3]
+        # Por defecto, devuelve todas las notas de la familia del usuario
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 0
+        assert response.data["count"] == 1
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["title"] == "Nota Familiar"
 
     def test_validation_short_title(self):
         url = reverse("note-list")

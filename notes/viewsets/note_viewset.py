@@ -1,35 +1,39 @@
 from uuid import UUID
 from rest_framework import viewsets, permissions
 from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.pagination import PageNumberPagination
 from ..models import Note
 from ..serializers import NoteSerializer
+
+
+class NotePagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 class NoteViewSet(viewsets.ModelViewSet):
     serializer_class = NoteSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = NotePagination
 
     def get_queryset(self):
         user = self.request.user
-        # 1. Obtenemos el ID del perfil desde la URL (?profile_id=...)
-        profile_id = self.request.query_params.get("profile_id")
+        
+        # Return all notes for profiles belonging to the user's family, ordered by newest first
+        queryset = Note.objects.filter(
+            profile__family=user.family_account
+        ).select_related("profile", "profile__family").order_by("-created_at")
 
-        # 2. Si el frontend no manda un ID, devolvemos una lista vacía.
-        # Esto cumple tu regla: "cada perfil ve sus propias notas".
-        if profile_id is None:
-            return Note.objects.none()
+        profile_id = self.request.query_params.get("profile_id") or self.request.query_params.get("profile")
+        if profile_id:
+            try:
+                UUID(profile_id)
+                queryset = queryset.filter(profile_id=profile_id)
+            except ValueError:
+                raise ValidationError({"profile_id": "Invalid UUID."})
 
-        try:
-            UUID(profile_id)
-        except ValueError:
-            raise ValidationError({"profile_id": "Invalid UUID."})
-
-        # 3. Filtro de Seguridad y Privacidad:
-        # - Filtramos por el ID del perfil solicitado.
-        # - VALIDAMOS que el perfil pertenezca a la familia del usuario actual.
-        return Note.objects.filter(
-            profile_id=profile_id, profile__family=user.family_account
-        ).select_related("profile", "profile__family")
+        return queryset
 
     def perform_create(self, serializer):
         profile = serializer.validated_data["profile"]
@@ -42,3 +46,4 @@ class NoteViewSet(viewsets.ModelViewSet):
         if profile.family.owner_id != self.request.user.id:
             raise PermissionDenied("Profile not allowed.")
         serializer.save()
+
