@@ -10,6 +10,9 @@ jobs:
   test:
     name: Lint, Test & Docker Check
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: "django-insecure-ci-testing-key-for-github-actions"
+      DEBUG: "True"
 
     steps:
       - name: Checkout Code
