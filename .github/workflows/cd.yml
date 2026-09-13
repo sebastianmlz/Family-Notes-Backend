@@ -37,7 +37,7 @@ jobs:
           echo "Waiting 45 seconds for Render to fetch code and begin container deployment..."
           sleep 45
 
-          HEALTH_URL="https://family-notes-backend.onrender.com/healthz"
+          HEALTH_URL="https://family-notes-backend-ghcr.onrender.com/healthz"
           MAX_ATTEMPTS=12
           ATTEMPT=1
           SUCCESS=0
