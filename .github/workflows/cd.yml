@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    name: Trigger Render Deployment
+    name: Trigger & Verify Render Deployment
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
@@ -21,17 +21,47 @@ jobs:
             exit 1
           fi
 
-          echo "Triggering deployment in Render via Deploy Hook..."
+          echo "Triggering deployment in Render..."
           response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}")
           http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
-
-          echo "HTTP Status Code: $http_code"
-          echo "Response Body: $body"
 
           if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-            echo "Deployment signal accepted by Render successfully!"
+            echo "Deployment webhook accepted by Render (HTTP $http_code)."
           else
             echo "::error::Render rejected deploy hook with HTTP $http_code"
             exit 1
           fi
+
+      - name: Wait & Verify Health Check
+        run: |
+          echo "Waiting 45 seconds for Render to fetch code and begin container deployment..."
+          sleep 45
+
+          HEALTH_URL="https://family-notes-backend.onrender.com/healthz"
+          MAX_ATTEMPTS=12
+          ATTEMPT=1
+          SUCCESS=0
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking $HEALTH_URL..."
+            HTTP_STATUS=$(curl -s -o /tmp/health_response.json -w "%{http_code}" "$HEALTH_URL" || echo "000")
+
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "Health check succeeded! (HTTP $HTTP_STATUS)"
+              cat /tmp/health_response.json
+              echo ""
+              SUCCESS=1
+              break
+            else
+              echo "Status: $HTTP_STATUS. Service not ready yet. Waiting 15s..."
+              sleep 15
+              ATTEMPT=$((ATTEMPT + 1))
+            fi
+          done
+
+          if [ $SUCCESS -ne 1 ]; then
+            echo "::error::Deployment verification failed: /healthz did not respond with 200 OK after $((MAX_ATTEMPTS * 15))s."
+            exit 1
+          fi
+
+          echo "Deployment verified successfully! Service is live and healthy."

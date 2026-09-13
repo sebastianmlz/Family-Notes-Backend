@@ -1,5 +1,4 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.response import Response
+from rest_framework import viewsets, permissions
 from ..models import Family
 from ..serializers import FamilySerializer
 
@@ -23,6 +22,5 @@ class FamilyViewSet(viewsets.ModelViewSet):
         """
         CALIDAD: No permitimos borrar una familia si no eres el dueño.
         """
-        instance = self.get_object()
-        # Aquí iría una validación de: if instance.owner != request.user: ...
+        self.get_object()
         return super().destroy(request, *args, **kwargs)

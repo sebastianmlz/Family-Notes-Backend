@@ -19,7 +19,7 @@ class NoteViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        
+
         # Return all notes for profiles belonging to the user's family, ordered by newest first
         queryset = Note.objects.filter(
             profile__family=user.family_account
